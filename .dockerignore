@@ -1,0 +1,45 @@
+# Version control / CI
+.git
+.github
+
+# Node / frontend build artifacts (rebuilt fresh in stage 1)
+**/node_modules
+frontend/.next
+frontend/out
+
+# Python
+**/__pycache__
+**/*.pyc
+**/*.pyo
+.venv
+backend/.venv
+.pytest_cache
+.mypy_cache
+.ruff_cache
+htmlcov
+.coverage
+
+# Tests (built and run in their own container/stage, not the runtime image)
+test/
+
+# Runtime database files and volume mount target contents
+db/*.db
+db/*.db-wal
+db/*.db-shm
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Project documentation (not needed at runtime)
+planning/
+*.md
+!backend/README.md
+!frontend/README.md
+
+# Editor / OS cruft
+.vscode
+.idea
+.DS_Store
+Thumbs.db

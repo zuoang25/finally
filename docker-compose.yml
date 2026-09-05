@@ -1,0 +1,22 @@
+services:
+  finally:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: finally
+    container_name: finally
+    ports:
+      - "8000:8000"
+    volumes:
+      - finally-data:/app/db
+    # docker compose treats a missing env_file as an error, so this project ships an
+    # empty .env (copy .env.example -> .env) rather than omitting it. With no keys set,
+    # the app still runs fully: market data falls back to the built-in simulator and
+    # LLM_MOCK=true (or an unset OPENROUTER_API_KEY) gives deterministic mock chat responses.
+    env_file:
+      - path: .env
+        required: false
+    restart: unless-stopped
+
+volumes:
+  finally-data:

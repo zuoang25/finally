@@ -30,11 +30,25 @@ Single Docker container serving everything on port 8000:
 cp .env.example .env
 # Add your OPENROUTER_API_KEY to .env
 
-# Run with Docker
-docker build -t finally .
-docker run -v finally-data:/app/db -p 8000:8000 --env-file .env finally
+# Start it (builds the image on first run)
+./scripts/start_mac.sh              # macOS / Linux
+pwsh scripts/start_windows.ps1      # Windows
 
 # Open http://localhost:8000
+```
+
+To stop it (the data volume is preserved):
+
+```bash
+./scripts/stop_mac.sh               # macOS / Linux
+pwsh scripts/stop_windows.ps1       # Windows
+```
+
+Or drive Docker directly:
+
+```bash
+docker build -t finally .
+docker run -v finally-data:/app/db -p 8000:8000 --env-file .env finally
 ```
 
 ## Environment Variables
@@ -44,6 +58,10 @@ docker run -v finally-data:/app/db -p 8000:8000 --env-file .env finally
 | `OPENROUTER_API_KEY` | Yes | OpenRouter API key for AI chat |
 | `MASSIVE_API_KEY` | No | Massive (Polygon.io) key for real market data; omit to use simulator |
 | `LLM_MOCK` | No | Set `true` for deterministic mock LLM responses (testing) |
+| `FINALLY_DB_PATH` | No | Override the SQLite path; the container sets `/app/db/finally.db` |
+
+Without `OPENROUTER_API_KEY` everything works except live AI chat. Without `MASSIVE_API_KEY` the
+built-in GBM simulator drives prices, which is the recommended default.
 
 ## Project Structure
 
@@ -56,6 +74,26 @@ finally/
 ├── db/          # SQLite volume mount (runtime)
 └── scripts/     # Start/stop helpers
 ```
+
+## Testing
+
+```bash
+cd backend && uv run --extra dev pytest -q     # 328 unit/integration tests
+cd frontend && npm test -- --run               # 107 component tests
+cd test && npm run e2e                         # 27 Playwright E2E tests
+```
+
+The E2E suite builds the production image and runs against it with `LLM_MOCK=true`, so it needs no
+API key. It defaults to host port **8100** and mounts no volume at all - the database lives in a
+tmpfs and is reseeded on every start - so it can run alongside a live app on 8000 without
+interfering with it or with your `finally-data` volume. Override the port with `E2E_HOST_PORT` if
+8100 is taken.
+
+## Documentation
+
+- `planning/BUILD_SUMMARY.md` - what was built, key decisions, and gotchas (start here)
+- `planning/CONTRACTS.md` - the authoritative interface contract between components
+- `planning/PLAN.md` - the original specification
 
 ## License
 

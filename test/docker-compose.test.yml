@@ -1,0 +1,79 @@
+# FinAlly end-to-end stack.
+#
+#   docker compose -f test/docker-compose.test.yml up -d --build --force-recreate --wait finally-test
+#   docker compose -f test/docker-compose.test.yml run --rm playwright
+#   docker compose -f test/docker-compose.test.yml down -v
+#
+# Two services, deliberately separate so that browser dependencies never enter the
+# production image (PLAN.md section 12):
+#
+#   finally-test  the real production Dockerfile, built unmodified, running with
+#                 LLM_MOCK=true and a throwaway database.
+#   playwright    the official Playwright image, mounting this directory and running
+#                 the suite against http://finally-test:8000.
+#
+# Database isolation: FINALLY_DB_PATH points inside a tmpfs, so every container start
+# gets a pristine $10,000 / empty-book database. Nothing is shared with the
+# `finally-data` volume that docker-compose.yml (production) uses.
+
+name: finally-e2e
+
+services:
+  finally-test:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: finally:e2e
+    container_name: finally-e2e-app
+    # No env_file: the suite must never inherit the developer's real
+    # OPENROUTER_API_KEY or MASSIVE_API_KEY. Everything it needs is below.
+    environment:
+      LLM_MOCK: "true"
+      OPENROUTER_API_KEY: ""
+      MASSIVE_API_KEY: ""
+      FINALLY_DB_PATH: /tmp/e2e/finally.db
+      PORT: "8000"
+    tmpfs:
+      # Wipes the SQLite file on every container start -> deterministic fixtures.
+      - /tmp:mode=1777
+    ports:
+      # Published on 8100 by default, NOT 8000: a developer's production `finally`
+      # container routinely owns 8000, and a test stack must never depend on that
+      # port being free. In-container it is still 8000. Override with E2E_HOST_PORT.
+      - "${E2E_HOST_PORT:-8100}:8000"
+    # Tighter than the image's own HEALTHCHECK so `up --wait` returns in seconds.
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3).status == 200 else 1)"
+      interval: 2s
+      timeout: 4s
+      retries: 30
+      start_period: 3s
+
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.63.0-noble
+    container_name: finally-e2e-playwright
+    profiles: ["e2e"]
+    depends_on:
+      finally-test:
+        condition: service_healthy
+    working_dir: /e2e
+    environment:
+      E2E_BASE_URL: http://finally-test:8000
+      E2E_APP_CONTAINER: finally-e2e-app
+      CI: "true"
+    volumes:
+      - ./:/e2e
+      # Anonymous volume masks the host's node_modules so the Linux container
+      # installs its own (the host tree may have been built on Windows).
+      - /e2e/node_modules
+      # Lets the SSE-resilience spec bounce the app container to force a genuine
+      # stream disconnect. Without it that single test skips; the rest still runs.
+      - /var/run/docker.sock:/var/run/docker.sock
+    command:
+      - sh
+      - -c
+      - "npm install --no-audit --no-fund && npx playwright test"

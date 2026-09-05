@@ -1,0 +1,137 @@
+@import "tailwindcss";
+
+@theme {
+  /* Terminal glass: one continuous dark surface, divided by hairlines. */
+  --color-ground: #0d1117;
+  --color-surface: #121821;
+  --color-surface-2: #171f2b;
+  --color-raised: #1d2735;
+  --color-line: #222c3a;
+  --color-line-soft: #1a222e;
+
+  --color-ink: #e4ecf5;
+  --color-muted: #8494a8;
+  --color-dim: #5b6a7d;
+
+  --color-accent: #ecad0a;
+  --color-blue: #209dd7;
+  --color-purple: #753991;
+
+  --color-up: #2fd07a;
+  --color-down: #ff5c6c;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "Cascadia Mono", "Segoe UI Mono", Menlo, Consolas,
+    monospace;
+}
+
+@layer base {
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    background-color: var(--color-ground);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+
+  /* Every number in a trading terminal is compared against the one above it. */
+  .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-blue);
+    outline-offset: 1px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2a3646;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #384759;
+  }
+}
+
+@layer components {
+  /* Price flash: paint on change, fade back over ~500ms. */
+  .flash-up {
+    animation: flash-up 500ms ease-out;
+  }
+  .flash-down {
+    animation: flash-down 500ms ease-out;
+  }
+
+  @keyframes flash-up {
+    0% {
+      background-color: color-mix(in srgb, var(--color-up) 34%, transparent);
+      color: var(--color-up);
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+
+  @keyframes flash-down {
+    0% {
+      background-color: color-mix(in srgb, var(--color-down) 34%, transparent);
+      color: var(--color-down);
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+
+  .pulse-dot {
+    animation: pulse-dot 2.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
+    }
+  }
+
+  .panel-title {
+    color: var(--color-muted);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .grid-lines {
+    background-image:
+      linear-gradient(to right, rgba(34, 44, 58, 0.35) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(34, 44, 58, 0.35) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flash-up,
+  .flash-down,
+  .pulse-dot {
+    animation: none;
+  }
+}

@@ -205,3 +205,25 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# ---- FinAlly ----
+# Runtime SQLite database (created by the backend, volume-mounted in Docker)
+db/*.db
+db/*.db-wal
+db/*.db-shm
+
+# Next.js frontend
+node_modules/
+frontend/.next/
+frontend/out/
+frontend/next-env.d.ts
+.npm
+
+# Static export copied into the backend at Docker build time
+backend/static/
+
+# Playwright
+test/node_modules/
+test/test-results/
+test/playwright-report/
+test/blob-report/
